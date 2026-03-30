@@ -385,10 +385,17 @@ class Downloader
         // Pour l'audio uniquement
         $isAudioOnly = strpos($formatId, 'bestaudio') === 0 && strpos($formatId, 'bestvideo') === false;
 
+        // Adapter le format selon la plateforme
+        // Instagram/Facebook n'acceptent pas best[height<=X], utiliser 'best' directement
+        $adaptedFormat = $formatId;
+        if ($this->platform !== 'youtube' && preg_match('/^best\[height/', $formatId)) {
+            $adaptedFormat = 'best';
+        }
+
         if ($isAudioOnly) {
             $cmd = "{$bin} --no-playlist --no-warnings --no-check-certificates -f bestaudio --extract-audio --audio-format mp3 -o {$output} {$url} 2>&1";
         } else {
-            $format = escapeshellarg($formatId);
+            $format = escapeshellarg($adaptedFormat);
             $cmd = "{$bin} --no-playlist --no-warnings --no-check-certificates";
             $cmd .= " -f {$format}";
             // Ajouter -S pour économiser la bande passante et fusionner automatiquement si ffmpeg est présent
@@ -406,6 +413,26 @@ class Downloader
         $outputLines = [];
         $code = -1;
         @exec($cmd, $outputLines, $code);
+
+        // Retry avec format fallback si le format n'est pas disponible
+        if ($code !== 0 && $this->platform !== 'youtube' && $adaptedFormat !== 'best') {
+            // Réessayer avec 'best' directement
+            $format = escapeshellarg('best');
+            $cmd = "{$bin} --no-playlist --no-warnings --no-check-certificates";
+            $cmd .= " -f {$format}";
+            $cmd .= " -S res,ext:mp4:m4a";
+            $cmd .= " -o {$output}";
+
+            if (MAX_DURATION > 0) {
+                $cmd .= ' --match-filter "duration <= ' . (int)MAX_DURATION . '"';
+            }
+
+            $cmd .= " {$url} 2>&1";
+
+            $outputLines = [];
+            $code = -1;
+            @exec($cmd, $outputLines, $code);
+        }
 
         if ($code !== 0) {
             $error = implode("\n", $outputLines);
