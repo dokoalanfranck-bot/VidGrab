@@ -1,0 +1,37 @@
+# Fichiers temporaires
+tmp/*
+!tmp/.htaccess
+bin/*.exe
+bin/yt-dlp
+bin/yt-dlp.exe
+
+# Fichiers de test/debug
+test.php
+test_*.php
+debug.php
+
+# Dépendances (si jamais on ajoute composer)
+vendor/
+composer.lock
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.env
+.env.local
+
+# Logs
+*.log
+
+# Fichier compressé
+vidgrab.zip
