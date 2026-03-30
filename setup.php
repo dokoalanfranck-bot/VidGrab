@@ -7,7 +7,7 @@
 session_start();
 
 // Protection basique par mot de passe (changer en production)
-$setupPassword = 'vidgrab_setup_2024';
+$setupPassword = 'vidgrab.bissmoi.com';
 
 $authenticated = false;
 $message = '';

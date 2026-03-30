@@ -49,13 +49,33 @@ if (!validateCsrfToken($input['csrf_token'] ?? null)) {
 }
 
 try {
+    // Vérifier d'abord si yt-dlp est disponible
+    if (!Downloader::isYtdlpAvailable()) {
+        jsonResponse([
+            'error' => 'yt-dlp n\'est pas installé. Veuillez exécuter /setup.php pour installer.',
+            'debug' => 'yt-dlp not found in system'
+        ], 503);
+    }
+
     $downloader = new Downloader($input['url']);
     $info = $downloader->getInfo();
     jsonResponse(['success' => true, 'data' => $info]);
 } catch (InvalidArgumentException $e) {
     jsonResponse(['error' => $e->getMessage()], 400);
 } catch (RuntimeException $e) {
-    jsonResponse(['error' => $e->getMessage()], 500);
+    // Améliorer message d'erreur pour runtime errors
+    $message = $e->getMessage();
+    if (strpos($message, 'Impossible de récupérer') !== false) {
+        jsonResponse([
+            'error' => 'Impossible de récupérer les informations de la vidéo. Vérifiez que l\'URL est valide et yt-dlp est installé (voir /diagnose.php).',
+            'debug' => $message
+        ], 500);
+    } else {
+        jsonResponse(['error' => $message], 500);
+    }
 } catch (Throwable $e) {
-    jsonResponse(['error' => 'Erreur: ' . get_class($e) . ': ' . $e->getMessage()], 500);
+    jsonResponse([
+        'error' => 'Une erreur inattendue s\'est produite.',
+        'debug' => get_class($e) . ': ' . $e->getMessage()
+    ], 500);
 }

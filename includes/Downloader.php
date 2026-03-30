@@ -122,7 +122,7 @@ class Downloader
     public function getInfo(): array
     {
         if (!self::isYtdlpAvailable()) {
-            return $this->getInfoFallback();
+            throw new RuntimeException('yt-dlp n\'est pas disponible. Veuillez l\'installer via setup.php ou manuellement.');
         }
 
         $binPath = $this->getYtdlpBin();
@@ -136,12 +136,17 @@ class Downloader
         @exec($cmd, $output, $code);
 
         if ($code !== 0) {
-            throw new RuntimeException('Impossible de récupérer les informations de la vidéo.');
+            $error = implode("\n", $output);
+            // Si le message d'erreur est très long, garder les dernières lignes
+            if (strlen($error) > 500) {
+                $error = implode("\n", array_slice($output, -5));
+            }
+            throw new RuntimeException('Impossible de récupérer les informations: ' . trim($error));
         }
 
         $json = json_decode(implode('', $output), true);
         if (!$json) {
-            throw new RuntimeException('Réponse invalide du serveur.');
+            throw new RuntimeException('Réponse invalide du serveur (JSON décoding failed).');
         }
 
         return $this->formatVideoInfo($json);
